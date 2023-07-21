@@ -7,6 +7,8 @@ import * as MediaLibrary from 'expo-media-library';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
+import axios from 'axios';
+
 export default function App() {
   let cameraRef = useRef();
   const [hasCameraPermission, setHasCameraPermission] = useState();
@@ -45,6 +47,32 @@ export default function App() {
 
     let newPhoto = await cameraRef.current.takePictureAsync(options);
     setPhoto(newPhoto);
+    await uploadPhoto();
+  };
+
+  let uploadPhoto = async () => {
+    let localUri = photo.uri;
+    let filename = localUri.split('/').pop();
+
+    let match = /\.(\w+)$/.exec(filename);
+    let type = match ? `image/${match[1]}` : 'image'
+
+    let formData = new FormData();
+    formData.append('photo', {uri: localUri, name: filename, type});
+
+    try {
+      let response = await axios({
+        method: 'POST',
+        url: 'http://192.168.5.120:3000/upload',
+        data: formData,
+        headers: {
+          'Content-Type' : 'multipart/form-data',
+        },
+      });
+      console.log(response);
+    } catch (error) {
+      console.error('There has been a problem with uploading the photo', error);
+    }
   };
 
   if (photo) {
@@ -62,7 +90,7 @@ export default function App() {
       <SafeAreaView style={styles.container}>
         <Image style={styles.preview} source={{ uri: "data:image/jpg;base64," + photo.base64 }} />
         <View style={styles.buttonGroup}>
-          <TouchableOpacity style={styles.saveDiscardButton} onPress={savePhoto}>
+          <TouchableOpacity style={styles.saveDiscardButton} onPress={uploadPhoto}>
             <Ionicons name='checkmark-sharp' size={36} color='white'/>
           </TouchableOpacity>
           <TouchableOpacity style={styles.saveDiscardButton} onPress={discardPhoto}>
