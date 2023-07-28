@@ -6,20 +6,17 @@ import { shareAsync } from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-
 import axios from 'axios';
 
-export default function App() {
+export default function CameraView() {
   let cameraRef = useRef();
   const [hasCameraPermission, setHasCameraPermission] = useState();
   const [hasMediaLibraryPermission, setHasMediaLibraryPermission] = useState();
   const [photo, setPhoto] = useState();
+  const [corners, setCorners] = useState();
+  const [height, setHeight] = useState();
+  const [width, setWidth] = useState();
   const navigation = useNavigation();
-
-  const goToMainMenu = () => {
-    navigation.navigate('MainMenu');
-  }
-
 
   useEffect(() => {
     (async () => {
@@ -38,40 +35,34 @@ export default function App() {
     return <Text>Permission for camera not granted. Please change this in settings.</Text>
   }
 
-  let takePic = async () => {
-    let options = {
-      quality: 1,
-      base64: true,
-      exif: false
-    };
+  const takePic = async () => {
+      const options = {
+        quality: 1,
+        base64: true,
+        exif: false
+      };
 
     let newPhoto = await cameraRef.current.takePictureAsync(options);
     setPhoto(newPhoto);
-    await uploadPhoto();
   };
 
-  let uploadPhoto = async () => {
-    let localUri = photo.uri;
-    let filename = localUri.split('/').pop();
+  let uploadPhoto = async (localUri) => {
+    const filename = localUri.split('/').pop();
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : 'image';
 
-    let match = /\.(\w+)$/.exec(filename);
-    let type = match ? `image/${match[1]}` : 'image'
-
-    let formData = new FormData();
-    formData.append('photo', {uri: localUri, name: filename, type});
+    const formData = new FormData();
+    formData.append('photo', { uri: localUri, name: filename, type });
 
     try {
-      let response = await axios({
-        method: 'POST',
-        url: 'http://192.168.5.120:3000/upload',
-        data: formData,
-        headers: {
-          'Content-Type' : 'multipart/form-data',
-        },
-      });
-      console.log(response);
+      const response = await axios.post('http://192.168.5.118:3000/upload', formData);
+      console.log(response.data); // log the entire response data
+      const corners = response.data.coordinates.corners;
+      const height = response.data.dimensions.height;
+      const width = response.data.dimensions.width;
+      navigation.navigate('ImageView', { corners, height, width, imageUri: localUri });
     } catch (error) {
-      console.error('There has been a problem with uploading the photo', error);
+      console.error('There is a problem with uploading the photo', error);
     }
   };
 
@@ -90,9 +81,9 @@ export default function App() {
       <SafeAreaView style={styles.container}>
         <Image style={styles.preview} source={{ uri: "data:image/jpg;base64," + photo.base64 }} />
         <View style={styles.buttonGroup}>
-          <TouchableOpacity style={styles.saveDiscardButton} onPress={uploadPhoto}>
-            <Ionicons name='checkmark-sharp' size={36} color='white'/>
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.saveDiscardButton} onPress={() => uploadPhoto(photo.uri)}>
+          <Ionicons name='checkmark-sharp' size={36} color='white'/>
+        </TouchableOpacity>
           <TouchableOpacity style={styles.saveDiscardButton} onPress={discardPhoto}>
             <Ionicons name="reload-sharp" size={36} color="white" />
           </TouchableOpacity>
