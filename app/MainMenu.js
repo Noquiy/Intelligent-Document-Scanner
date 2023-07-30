@@ -37,7 +37,7 @@ export default function MainMenu() {
     <View style={styles.container}>
       <View style={styles.containerTop}>
         <TouchableOpacity style={styles.menuButton} onPress={handleMenuButtonClick}>
-          <Ionicons name={menuButtonIcon} size={36} color="#673C3C" />
+          <Ionicons name={menuButtonIcon} size={36} color="#2292D3" />
         </TouchableOpacity>
         <Text style={styles.copywright}>
            © 2023 Intelligent Scanner by AI Technica
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FAD1D1',
+    backgroundColor: '#CAE6F6',
   },
   containerTop: {
     position: 'absolute',
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: '100%',
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#E5F3FB',
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
     paddingHorizontal: 20,
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    backgroundColor: '#E61919',
+    backgroundColor: '#2292D3',
     marginVertical: 10,
   },
   documentsText: {
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#AA1313',
+    backgroundColor: '#58B1E4',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 3,
