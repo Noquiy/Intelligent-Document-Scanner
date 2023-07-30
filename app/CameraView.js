@@ -1,17 +1,16 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, SafeAreaView, Button, Image, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Camera } from 'expo-camera';
-import { shareAsync } from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, AntDesign, Feather } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 
 export default function CameraView() {
   let cameraRef = useRef();
   const [hasCameraPermission, setHasCameraPermission] = useState();
-  const [hasMediaLibraryPermission, setHasMediaLibraryPermission] = useState();
   const [photo, setPhoto] = useState();
   const [corners, setCorners] = useState();
   const [height, setHeight] = useState();
@@ -21,9 +20,9 @@ export default function CameraView() {
   useEffect(() => {
     (async () => {
       const cameraPermission = await Camera.requestCameraPermissionsAsync();
-      const mediaLibraryPermission = await MediaLibrary.requestPermissionsAsync();
+
       setHasCameraPermission(cameraPermission.status === "granted");
-      setHasMediaLibraryPermission(mediaLibraryPermission.status === "granted");
+
       let ratios = await cameraRef.current.getSupportedRatiosAsync();
 
     })();
@@ -35,6 +34,30 @@ export default function CameraView() {
     return <Text>Permission for camera not granted. Please change this in settings.</Text>
   }
 
+  const mainMenu = () => {
+    navigation.navigate('MainMenu');
+  }
+
+  const choosePhotoFromGallery = async () => {
+    try {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        aspect: [4, 3], 
+        quality: 1,
+      });
+
+      console.log(result);
+
+      if (!result.canceled && result.assets.length > 0) {
+        const selectedImageUri = result.assets[0].uri;
+        setPhoto(selectedImageUri);
+      }
+    } catch (error) {
+      console.error('Error accessing media library:', error);
+    }
+  }
+
   const takePic = async () => {
       const options = {
         quality: 1,
@@ -43,7 +66,7 @@ export default function CameraView() {
       };
 
     let newPhoto = await cameraRef.current.takePictureAsync(options);
-    setPhoto(newPhoto);
+    setPhoto(newPhoto.uri);
   };
 
   let uploadPhoto = async (localUri) => {
@@ -67,41 +90,57 @@ export default function CameraView() {
   };
 
   if (photo) {
-    let savePhoto = () => {
-      MediaLibrary.saveToLibraryAsync(photo.uri).then(() => {
-        setPhoto(undefined);
-      });
-    };
-
-    let discardPhoto = () => {
+  let savePhoto = () => {
+    MediaLibrary.saveToLibraryAsync(photo.uri).then(() => {
       setPhoto(undefined);
-    };
+    });
+  };
 
-    return (
-      <SafeAreaView style={styles.container}>
-        <Image style={styles.preview} source={{ uri: "data:image/jpg;base64," + photo.base64 }} />
-        <View style={styles.buttonGroup}>
+  let discardPhoto = () => {
+    setPhoto(undefined);
+  };
+
+  return (
+    <View style={styles.container}>
+      <Image style={styles.preview} source={{ uri: photo}} />
+      <View style={ styles.mainMenuButton }>
+        <TouchableOpacity style={ styles.mainMenuButtonCircle} onPress = { mainMenu }>
+          <AntDesign name='left' size={30 } color={'#58B1E4'}></AntDesign>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.buttonGroup}>
         <TouchableOpacity style={styles.saveDiscardButton} onPress={() => uploadPhoto(photo.uri)}>
           <Ionicons name='checkmark-sharp' size={36} color='white'/>
         </TouchableOpacity>
-          <TouchableOpacity style={styles.saveDiscardButton} onPress={discardPhoto}>
-            <Ionicons name="reload-sharp" size={36} color="white" />
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
+        <TouchableOpacity style={styles.saveDiscardButton} onPress={discardPhoto}>
+          <Ionicons name="reload-sharp" size={36} color="white" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
 
-  return (
-    <Camera style={styles.container} ref={cameraRef} ratio='16:9'>
-      <View style={styles.buttonContainer}>
-      <TouchableOpacity onPress={takePic}>
-        <Ionicons name="camera-outline" size={36} color="white" />
+return (
+  <View style={styles.container}>
+    <Camera style={styles.camera} ref={cameraRef} ratio='16:9'>
+      <TouchableOpacity style={styles.mainMenuButton} onPress={mainMenu}>
+        <AntDesign name='left' size={30} color={'#58B1E4'}></AntDesign>
       </TouchableOpacity>
+      <View style={styles.managePhotoButtons}>
+        <TouchableOpacity onPress={takePic}>
+          <Ionicons name="camera-outline" size={66} color="white" />
+        </TouchableOpacity>
+      </View>
+      <View style = { styles.manageChoosePhotoFromGallery}>
+        <TouchableOpacity onPress={ choosePhotoFromGallery }>
+          <Feather name="hard-drive" size={36} color="white"/>
+        </TouchableOpacity>
       </View>
       <StatusBar style="auto" />
     </Camera>
-  );
+  </View>
+);
+
 }
 
 const styles = StyleSheet.create({
@@ -109,20 +148,50 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    height: "100%",
+    width: "100%",
   },
-  buttonContainer: {
+  camera: {
+    flex: 1,
+    alignSelf: 'stretch',
+  },
+  mainMenuButton: {
+    position: 'absolute',
+    top: '8%',
+    left: '7%',
+  },
+  mainMenuButtonCircle: {
+    opacity: 100,
     borderRadius: 30,
-    backgroundColor: '#AA1313',
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  managePhotoButtons: {
+    borderRadius: 50,
+    backgroundColor: '#58B1E4',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 90,
+    height: 90,
+    position: 'absolute',
+    left: '50%',
+    bottom: '5%',
+    transform: [{ translateX: -45 }],
+  },
+
+  manageChoosePhotoFromGallery: {
     justifyContent: 'center',
     alignItems: 'center',
     width: 60,
     height: 60,
     position: 'absolute',
-    bottom: 40,
+    right: '13%',
+    bottom: '6.5%',
   },
   saveDiscardButton: {
     borderRadius: 30,
-    backgroundColor: '#AA1313',
+    backgroundColor: '#58B1E4',
     justifyContent: 'center',
     alignItems: 'center',
     width: 60,
@@ -130,7 +199,7 @@ const styles = StyleSheet.create({
   },
   preview: {
     alignSelf: 'stretch',
-    flex: 1
+    flex: 1,
   },
   buttonGroup: {
     flexDirection: 'row',
@@ -140,3 +209,4 @@ const styles = StyleSheet.create({
     bottom: 40,
   },
 });
+
