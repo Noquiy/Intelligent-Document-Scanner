@@ -2,6 +2,18 @@ import numpy as np
 import cv2
 import sys
 import json
+import os
+from pathlib import Path
+
+class FileExplorer:
+    def __init__(self):
+        self.makeDirectory()
+    
+    def makeDirectory(self):
+        folder_name = sys.argv[1]
+        _path = '/uploads'
+        os.mkdir(os.path.join(_path, folder_name))
+         
 
 class DocumentScanner: 
     def __init__ (self):
@@ -198,7 +210,7 @@ class DocumentScanner:
         cv2.destroyAllWindows()
         
         
+fileExplorer = FileExplorer()
 edges = DocumentScanner()
 edges.receive_image(sys.argv[1]) # load image
 coords = edges.get_edge_coordinates() # get the detected document corners
-
